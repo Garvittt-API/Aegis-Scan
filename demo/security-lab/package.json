@@ -1,0 +1,5 @@
+{
+  "name": "aegisscan-local-security-lab",
+  "private": true,
+  "description": "Local-only demo fixture; no production dependencies"
+}

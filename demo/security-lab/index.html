@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AegisScan Local Security Demonstration Environment</title>
+  <style>
+    body { margin: 0; background: #101722; color: #e5edf6; font: 16px system-ui, sans-serif; }
+    main { max-width: 760px; margin: 48px auto; padding: 28px; border: 1px solid #334155; border-radius: 12px; }
+    .warning { color: #fbbf24; border: 1px solid #92400e; padding: 12px; border-radius: 8px; }
+    code { color: #93c5fd; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>AegisScan Local Security Demonstration Environment</h1>
+    <p class="warning">LOCAL DEMO ONLY - INTENTIONALLY INSECURE</p>
+    <p>This isolated localhost application contains safe, observable security configuration examples for the AegisScan demo.</p>
+    <ul>
+      <li>Security headers are intentionally incomplete.</li>
+      <li>The demo cookie intentionally omits security attributes.</li>
+      <li>CORS is intentionally permissive for local scanner evidence.</li>
+      <li><code>/api/config</code> exposes a harmless demo configuration response.</li>
+    </ul>
+    <p>Target: <code>http://127.0.0.1:8010</code></p>
+    <script src="/static/demo.js"></script>
+  </main>
+</body>
+</html>
