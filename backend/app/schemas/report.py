@@ -24,10 +24,15 @@ class ReportResponse(ReportBase):
     """Schema for Report response."""
     id: int
     assessment_id: int
+    status: str
     file_path: Optional[str]
     file_size: Optional[int]
-    generated_at: datetime
-    generation_time_seconds: Optional[int]
+    file_size_bytes: Optional[int] = None
+    generated_at: Optional[datetime] = None
+    report_version: str = "1.0"
+    generated_by: str = "AegisScan"
+    error: Optional[str] = None
+    content_hash: Optional[str] = None
     created_at: datetime
 
     class Config:

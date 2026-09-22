@@ -5,7 +5,8 @@ import {
   CheckCircle,
   Target,
   TrendingUp,
-  Clock
+  Clock,
+  History
 } from 'lucide-react'
 import {
   BarChart,
@@ -31,17 +32,12 @@ const COLORS = {
 }
 
 export default function Dashboard() {
-  const [stats, setStats] = useState({
-    totalAssessments: 0,
-    totalFindings: 0,
-    verifiedFindings: 0,
-    criticalFindings: 0,
-    highFindings: 0,
-    mediumFindings: 0,
-    lowFindings: 0
-  })
+  const [analytics, setAnalytics] = useState(null)
   const [recentAssessments, setRecentAssessments] = useState([])
+  const [trends, setTrends] = useState(null)
+  const [scannerCoverage, setScannerCoverage] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [analyticsError, setAnalyticsError] = useState(false)
 
   useEffect(() => {
     fetchDashboardData()
@@ -49,37 +45,27 @@ export default function Dashboard() {
 
   const fetchDashboardData = async () => {
     try {
-      const [assessmentsRes, findingsRes] = await Promise.all([
-        api.get('/assessments?limit=5'),
-        api.get('/findings?limit=100')
+      const [overviewRes, assessmentsRes, trendsRes, scannersRes] = await Promise.all([
+        api.get('/analytics/overview'),
+        api.get('/analytics/assessments'),
+        api.get('/analytics/trends'),
+        api.get('/analytics/scanners')
       ])
-
-      const assessments = assessmentsRes.data.items || []
-      const findings = findingsRes.data.items || []
-
-      setRecentAssessments(assessments)
-      setStats({
-        totalAssessments: assessmentsRes.data.total || 0,
-        totalFindings: findingsRes.data.total || 0,
-        verifiedFindings: findings.filter(f => f.verification_status === 'verified').length,
-        criticalFindings: findings.filter(f => f.severity === 'critical').length,
-        highFindings: findings.filter(f => f.severity === 'high').length,
-        mediumFindings: findings.filter(f => f.severity === 'medium').length,
-        lowFindings: findings.filter(f => f.severity === 'low').length
-      })
+      setAnalytics(overviewRes.data)
+      setRecentAssessments((assessmentsRes.data.items || []).slice(-5).reverse())
+      setTrends(trendsRes.data)
+      setScannerCoverage(scannersRes.data)
     } catch (error) {
+      setAnalyticsError(true)
       console.error('Failed to fetch dashboard data:', error)
     } finally {
       setLoading(false)
     }
   }
 
-  const severityData = [
-    { name: 'Critical', value: stats.criticalFindings, color: COLORS.critical },
-    { name: 'High', value: stats.highFindings, color: COLORS.high },
-    { name: 'Medium', value: stats.mediumFindings, color: COLORS.medium },
-    { name: 'Low', value: stats.lowFindings, color: COLORS.low }
-  ].filter(d => d.value > 0)
+  const severityData = analytics ? Object.entries(analytics.severity || {}).map(([name, value]) => ({
+    name: name[0].toUpperCase() + name.slice(1), value, color: COLORS[name]
+  })).filter(d => d.value > 0) : []
 
   if (loading) {
     return (
@@ -101,28 +87,28 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="Total Findings"
-          value={stats.totalFindings}
+          value={analyticsError ? 'Unavailable' : analytics?.total_findings ?? 0}
           icon={AlertTriangle}
           color="text-orange-400"
           bgColor="bg-orange-500/10"
         />
         <StatCard
           title="Verified"
-          value={stats.verifiedFindings}
+          value={analyticsError ? 'Unavailable' : analytics?.verified_findings ?? 0}
           icon={CheckCircle}
           color="text-green-400"
           bgColor="bg-green-500/10"
         />
         <StatCard
           title="Critical"
-          value={stats.criticalFindings}
+          value={analyticsError ? 'Unavailable' : analytics?.severity?.critical ?? 0}
           icon={Shield}
           color="text-red-400"
           bgColor="bg-red-500/10"
         />
         <StatCard
           title="Assessments"
-          value={stats.totalAssessments}
+          value={analyticsError ? 'Unavailable' : analytics?.assessments ?? 0}
           icon={Target}
           color="text-blue-400"
           bgColor="bg-blue-500/10"
@@ -161,7 +147,7 @@ export default function Dashboard() {
             </ResponsiveContainer>
           ) : (
             <div className="flex items-center justify-center h-[250px] text-dark-400">
-              No findings yet
+              {analyticsError ? 'Analytics unavailable' : analytics?.total_findings === 0 ? 'No findings were produced by the executed assessments.' : 'Analytics unavailable'}
             </div>
           )}
           {/* Legend */}
@@ -217,6 +203,55 @@ export default function Dashboard() {
           )}
         </div>
       </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-dark-900 rounded-xl border border-dark-800 p-6">
+          <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2"><History className="w-5 h-5 text-cyan-400" />Assessment History</h2>
+          {recentAssessments.length > 0 ? recentAssessments.map(item => (
+            <div key={item.id} className="flex items-center justify-between border-b border-dark-800 py-3 last:border-0">
+              <div><p className="text-white">#{item.id} {item.name}</p><p className="text-xs text-dark-400">{item.findings} findings | {item.verified} verified</p></div>
+              <span className="text-xs text-dark-400">{item.status}</span>
+            </div>
+          )) : <p className="text-dark-400">No assessments available.</p>}
+        </div>
+        <div className="bg-dark-900 rounded-xl border border-dark-800 p-6">
+          <h2 className="text-lg font-semibold text-white mb-4">Security Intelligence</h2>
+          <ul className="space-y-3 text-sm text-dark-300">
+            <li>{analytics?.open_findings ?? 0} findings are currently open.</li>
+            <li>{analytics?.validated_remediations ?? 0} remediations are validated.</li>
+            <li>{analytics?.scanner_checks_executed ?? 0} scanner/check types have execution records.</li>
+          </ul>
+        </div>
+      </div>
+
+      {!analyticsError && analytics && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <MetricList title="Verification" values={analytics.verification} empty="No findings were produced." />
+          <MetricList title="Categories" values={analytics.categories} empty="No categories recorded." />
+          <div className="bg-dark-900 rounded-xl border border-dark-800 p-6">
+            <h2 className="text-lg font-semibold text-white mb-4">Remediation</h2>
+            <p className="text-2xl font-semibold text-white">{analytics.validated_remediations}</p>
+            <p className="text-sm text-dark-400 mt-1">validated remediations</p>
+          </div>
+        </div>
+      )}
+
+      {!analyticsError && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="bg-dark-900 rounded-xl border border-dark-800 p-6">
+            <h2 className="text-lg font-semibold text-white mb-4">Assessment Trend</h2>
+            {trends?.available ? trends.items.map(item => (
+              <div key={item.assessment_id} className="flex justify-between py-2 border-b border-dark-800 last:border-0 text-sm"><span className="text-dark-300">Assessment #{item.assessment_id}</span><span className="text-white">{item.findings} findings</span></div>
+            )) : <p className="text-dark-400">{trends?.message || 'Historical trends require multiple assessments.'}</p>}
+          </div>
+          <div className="bg-dark-900 rounded-xl border border-dark-800 p-6">
+            <h2 className="text-lg font-semibold text-white mb-4">Scanner Coverage</h2>
+            {scannerCoverage?.available ? scannerCoverage.items.map(item => (
+              <div key={item.scanner} className="flex justify-between py-2 border-b border-dark-800 last:border-0 text-sm"><span className="text-dark-300">{item.scanner}</span><span className="text-white">{item.completed ? 'Completed' : item.unavailable ? 'Unavailable' : item.failed ? 'Failed' : 'Not run'} | {item.findings} findings</span></div>
+            )) : <p className="text-dark-400">{scannerCoverage?.message || 'Scanner coverage data unavailable.'}</p>}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -233,6 +268,21 @@ function StatCard({ title, value, icon: Icon, color, bgColor }) {
           <Icon className={clsx('w-6 h-6', color)} />
         </div>
       </div>
+    </div>
+  )
+}
+
+function MetricList({ title, values, empty }) {
+  const entries = Object.entries(values || {})
+  return (
+    <div className="bg-dark-900 rounded-xl border border-dark-800 p-6">
+      <h2 className="text-lg font-semibold text-white mb-4">{title}</h2>
+      {entries.length ? entries.map(([name, value]) => (
+        <div key={name} className="flex justify-between py-2 border-b border-dark-800 last:border-0 text-sm">
+          <span className="text-dark-300 capitalize">{name.replaceAll('_', ' ')}</span>
+          <span className="text-white font-medium">{value}</span>
+        </div>
+      )) : <p className="text-dark-400">{empty}</p>}
     </div>
   )
 }

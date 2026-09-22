@@ -42,6 +42,8 @@ export default function AssessmentDetail() {
   const [summary, setSummary] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [report, setReport] = useState(null)
+  const [reportLoading, setReportLoading] = useState(false)
 
   useEffect(() => {
     fetchAssessment()
@@ -67,6 +69,19 @@ export default function AssessmentDetail() {
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A'
     return new Date(dateString).toLocaleString()
+  }
+
+  const generateReport = async (format) => {
+    setReportLoading(true)
+    try {
+      const response = await api.post('/reports', { assessment_id: Number(id), format })
+      setReport(response.data)
+    } catch (err) {
+      setError('Failed to generate report')
+      console.error(err)
+    } finally {
+      setReportLoading(false)
+    }
   }
 
   if (loading) {
@@ -318,6 +333,26 @@ export default function AssessmentDetail() {
               </div>
             ))}
           </div>
+        </div>
+
+        <div className="bg-dark-900 rounded-xl border border-dark-800 p-6 space-y-4">
+          <h3 className="text-md font-bold text-white flex items-center gap-2">
+            <FileText className="w-4 h-4 text-cyan-400" />
+            Security Report
+          </h3>
+          <p className="text-sm text-dark-400">Generate a report from the executed assessment data, including evidence references and remediation state.</p>
+          <div className="flex flex-wrap gap-2">
+            <button disabled={reportLoading} onClick={() => generateReport('html')} className="px-3 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg text-xs font-semibold">Generate HTML</button>
+            <button disabled={reportLoading} onClick={() => generateReport('pdf')} className="px-3 py-2 bg-dark-800 hover:bg-dark-700 disabled:opacity-50 text-white rounded-lg text-xs font-semibold">Generate PDF</button>
+          </div>
+          {report && (
+            <div className="text-xs text-dark-300 space-y-2">
+              <p>Status: <span className="text-white">{report.status}</span></p>
+              {report.error && <p className="text-yellow-400">{report.error}</p>}
+              {report.status === 'completed' && report.format === 'html' && <a className="text-cyan-400 hover:text-cyan-300" href={`/api/reports/${report.id}/html`} target="_blank" rel="noreferrer">View HTML report</a>}
+              {report.status === 'completed' && report.format === 'pdf' && <a className="text-cyan-400 hover:text-cyan-300" href={`/api/reports/${report.id}/pdf`} target="_blank" rel="noreferrer">Open PDF report</a>}
+            </div>
+          )}
         </div>
 
         {/* Selected Scanners */}

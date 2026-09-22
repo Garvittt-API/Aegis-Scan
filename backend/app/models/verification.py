@@ -40,6 +40,10 @@ class Verification(Base):
     request = Column(Text, nullable=True)  # HTTP request used for verification
     response = Column(Text, nullable=True)  # HTTP response received
     notes = Column(Text, nullable=True)
+    old_status = Column(String(50), nullable=True)
+    new_status = Column(String(50), nullable=True)
+    reason = Column(Text, nullable=True)
+    source = Column(String(100), nullable=True)
 
     # Timestamps
     verified_at = Column(DateTime, default=datetime.utcnow)

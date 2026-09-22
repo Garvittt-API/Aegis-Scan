@@ -2,7 +2,7 @@
 API routes package.
 """
 
-from app.api.routes import health, targets, assessments, attack_surface, discovery, scan_jobs, findings, assets
+from app.api.routes import health, targets, assessments, attack_surface, discovery, scan_jobs, findings, assets, reports, analytics
 
 __all__ = [
     "health",
@@ -13,4 +13,6 @@ __all__ = [
     "scan_jobs",
     "findings",
     "assets",
+    "reports",
+    "analytics",
 ]

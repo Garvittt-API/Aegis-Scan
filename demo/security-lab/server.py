@@ -18,7 +18,7 @@ class DemoHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
-    def do_GET(self):
+    def do_GET(self):   
         if self.path == "/api/config":
             self._send(200, "application/json", json.dumps({"debug": True, "environment": "demo"}).encode())
             return

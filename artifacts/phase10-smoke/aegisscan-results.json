@@ -1,0 +1,90 @@
+{
+  "assessment_id": 93,
+  "status": "PASS",
+  "findings": 0,
+  "critical": 0,
+  "high": 0,
+  "medium": 0,
+  "low": 0,
+  "informational": 0,
+  "policy": {
+    "status": "PASS",
+    "rules": [
+      {
+        "rule": "max_medium_findings",
+        "status": "PASS",
+        "actual": 0,
+        "threshold": 10,
+        "reason": "0 medium findings are within threshold 10."
+      },
+      {
+        "rule": "fail_on_critical",
+        "status": "PASS",
+        "actual": 0,
+        "threshold": 0,
+        "reason": "No critical findings detected."
+      },
+      {
+        "rule": "fail_on_high",
+        "status": "PASS",
+        "actual": 0,
+        "threshold": 0,
+        "reason": "No high findings detected."
+      },
+      {
+        "rule": "warn_on_unverified",
+        "status": "PASS",
+        "actual": 0,
+        "threshold": 5,
+        "reason": "Unverified findings are within warning threshold."
+      },
+      {
+        "rule": "fail_on_new_findings",
+        "status": "PASS",
+        "actual": 0,
+        "threshold": 0,
+        "reason": "No new findings detected."
+      },
+      {
+        "rule": "fail_on_reopened_findings",
+        "status": "PASS",
+        "actual": 0,
+        "threshold": 0,
+        "reason": "No reopened findings detected."
+      }
+    ],
+    "failed_rules": [],
+    "warning_rules": [],
+    "reason": "No configured policy rules were violated."
+  },
+  "baseline_assessment_id": 89,
+  "scanner_coverage": [
+    {
+      "scanner": "zap",
+      "configured": true,
+      "executed": true,
+      "completed": 0,
+      "failed": 0,
+      "unavailable": 1,
+      "findings": 0
+    },
+    {
+      "scanner": "nuclei",
+      "configured": true,
+      "executed": true,
+      "completed": 0,
+      "failed": 0,
+      "unavailable": 1,
+      "findings": 0
+    },
+    {
+      "scanner": "custom",
+      "configured": true,
+      "executed": true,
+      "completed": 1,
+      "failed": 0,
+      "unavailable": 0,
+      "findings": 0
+    }
+  ]
+}

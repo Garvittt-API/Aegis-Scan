@@ -37,6 +37,23 @@ class FindingStatus(str, enum.Enum):
     RESOLVED = "resolved"
 
 
+class FindingPriority(str, enum.Enum):
+    """Action priority derived from the transparent risk score."""
+    INFORMATIONAL = "informational"
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"
+
+
+class Exposure(str, enum.Enum):
+    """Known exposure of the affected component."""
+    INTERNET_EXPOSED = "internet_exposed"
+    NETWORK_EXPOSED = "network_exposed"
+    LOCAL = "local"
+    UNKNOWN = "unknown"
+
+
 class FindingCategory(str, enum.Enum):
     """Category of security finding."""
     AUTHENTICATION = "authentication"
@@ -62,6 +79,7 @@ class Finding(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     assessment_id = Column(Integer, ForeignKey("assessments.id"), nullable=False)
+    scan_job_id = Column(Integer, ForeignKey("scan_jobs.id", ondelete="SET NULL"), nullable=True, index=True)
 
     # Core information
     title = Column(String(500), nullable=False)
@@ -73,6 +91,7 @@ class Finding(Base):
     # Source information
     scanner = Column(String(100), nullable=False)  # zap, nuclei, semgrep, etc.
     scanner_id = Column(String(255), nullable=True)  # Original scanner finding ID
+    source_scanners = Column(Text, nullable=True)  # JSON list of contributing scanners
 
     # Classification
     cwe = Column(String(50), nullable=True)  # CWE identifier
@@ -88,21 +107,31 @@ class Finding(Base):
 
     # Evidence
     evidence = Column(Text, nullable=True)
+    evidence_type = Column(String(50), nullable=True)
     raw_output = Column(Text, nullable=True)
 
     # Verification
     verification_status = Column(SQLEnum(VerificationStatus), default=VerificationStatus.UNVERIFIED)
     verification_evidence = Column(Text, nullable=True)
+    verification_reason = Column(Text, nullable=True)
+    reproducibility = Column(String(50), nullable=True)
+    verified_at = Column(DateTime, nullable=True)
+    last_verified_at = Column(DateTime, nullable=True)
 
     # Status
     status = Column(SQLEnum(FindingStatus), default=FindingStatus.OPEN)
 
     # Risk
     risk_score = Column(Float, nullable=True)  # Calculated risk score
+    risk_level = Column(SQLEnum(FindingPriority), nullable=True)
+    priority = Column(SQLEnum(FindingPriority), nullable=True)
+    exposure = Column(SQLEnum(Exposure), default=Exposure.UNKNOWN, nullable=False)
+    risk_explanation = Column(Text, nullable=True)
 
     # Remediation
     remediation = Column(Text, nullable=True)
     references = Column(Text, nullable=True)  # JSON array of reference URLs
+    impact = Column(Text, nullable=True)
 
     # Deduplication
     fingerprint = Column(String(64), nullable=True, index=True)  # SHA256 hash for dedup
@@ -114,8 +143,15 @@ class Finding(Base):
 
     # Relationships
     assessment = relationship("Assessment", back_populates="findings")
+    scan_job = relationship("ScanJob")
     verifications = relationship("Verification", back_populates="finding", cascade="all, delete-orphan")
+    remediations = relationship("Remediation", back_populates="finding", cascade="all, delete-orphan")
     duplicates = relationship("Finding", foreign_keys=[duplicate_of])
 
     def __repr__(self):
         return f"<Finding(id={self.id}, title='{self.title[:50]}...', severity={self.severity})>"
+
+    @property
+    def cvss(self):
+        """Compatibility alias for the public finding contract."""
+        return self.cvss_score

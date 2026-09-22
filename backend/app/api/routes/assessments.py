@@ -10,7 +10,7 @@ from loguru import logger
 from app.core.database import get_db
 from app.models.assessment import Assessment, AssessmentStatus, AssessmentEnvironment
 from app.models.target import Target
-from app.models.finding import Finding, Severity
+from app.models.finding import Finding, Severity, FindingPriority, VerificationStatus
 from app.schemas.assessment import (
     AssessmentCreate,
     AssessmentUpdate,
@@ -25,6 +25,26 @@ from app.services.assessment_service import (
 )
 
 router = APIRouter()
+
+
+@router.get("/{assessment_id}/risk-summary")
+async def get_assessment_risk_summary(assessment_id: int, db: Session = Depends(get_db)):
+    """Return real finding risk and verification distributions."""
+    if not db.query(Assessment).filter(Assessment.id == assessment_id).first():
+        raise HTTPException(status_code=404, detail="Assessment not found")
+    query = db.query(Finding).filter(Finding.assessment_id == assessment_id)
+    return {
+        "total": query.count(),
+        "risk_distribution": {
+            level.value: query.filter(Finding.risk_level == level).count()
+            for level in FindingPriority
+        },
+        "verification_distribution": {
+            state.value: query.filter(Finding.verification_status == state).count()
+            for state in VerificationStatus
+        },
+        "average_risk_score": round((sum(item.risk_score or 0 for item in query.all()) / query.count()), 2) if query.count() else 0,
+    }
 
 
 @router.get("/presets/world-monitor", response_model=dict)
@@ -77,7 +97,7 @@ async def create_assessment(
     if not validation.is_valid:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"message": "Assessment configuration validation failed", "errors": validation.errors}
+            detail="Assessment configuration validation failed: " + "; ".join(validation.errors)
         )
 
     # Prepare dump

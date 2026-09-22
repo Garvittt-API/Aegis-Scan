@@ -17,6 +17,7 @@ from app.models.scan_job import (
     ScannerEngineType
 )
 from app.scanners.adapters import get_scanner_adapter
+from app.services.findings import FindingService
 
 
 class ScanPlanner:
@@ -269,6 +270,10 @@ class ScanOrchestrator:
             })
             db.commit()
             db.refresh(job)
+
+            # Normalize only the raw artifact produced by this job. Parser failures
+            # are isolated by FindingService and never replace the raw evidence.
+            FindingService.process_scan_result(db, job)
 
             logger.info(f"SCAN_JOB_FINISHED: job_id={job.id} scanner='{job.scanner.value}' status='{job.status.value}'")
 

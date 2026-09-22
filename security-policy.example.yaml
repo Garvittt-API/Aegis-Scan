@@ -1,0 +1,13 @@
+# Copy to a local policy file and adjust to your authorized assessment.
+# A policy failure is exit code 1; configuration errors are exit code 2.
+fail_on:
+  - critical
+  - high
+max_findings:
+  medium: 10
+fail_on_new_findings: true
+fail_on_reopened_findings: true
+fail_on_scanner_failure: false
+warn_on_unverified: 5
+baseline:
+  mode: previous_successful

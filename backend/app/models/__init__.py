@@ -15,10 +15,11 @@ from app.models.scan_job import (
     validate_job_transition
 )
 from app.models.scan import Scan, ScanStatus, ScannerType
-from app.models.finding import Finding, Severity, VerificationStatus, FindingStatus, FindingCategory
+from app.models.finding import Finding, Severity, VerificationStatus, FindingStatus, FindingCategory, FindingPriority, Exposure
 from app.models.asset import Asset, AssetType
 from app.models.report import Report, ReportFormat, ReportType
 from app.models.verification import Verification, VerificationMethod, VerificationResult
+from app.models.remediation import Remediation, RemediationHistory, RemediationStatus, RemediationEffort
 
 __all__ = [
     "Target",
@@ -48,6 +49,8 @@ __all__ = [
     "VerificationStatus",
     "FindingStatus",
     "FindingCategory",
+    "FindingPriority",
+    "Exposure",
     "Asset",
     "AssetType",
     "Report",
@@ -56,4 +59,8 @@ __all__ = [
     "Verification",
     "VerificationMethod",
     "VerificationResult",
+    "Remediation",
+    "RemediationHistory",
+    "RemediationStatus",
+    "RemediationEffort",
 ]

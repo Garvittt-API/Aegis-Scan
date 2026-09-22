@@ -9,7 +9,7 @@ from loguru import logger
 
 from app.core.config import settings
 from app.core.database import init_db
-from app.api.routes import health, targets, assessments, findings, assets, attack_surface, discovery, scan_jobs
+from app.api.routes import health, targets, assessments, findings, assets, attack_surface, discovery, scan_jobs, reports, analytics
 
 
 @asynccontextmanager
@@ -63,6 +63,8 @@ app.include_router(attack_surface.router, prefix="/api", tags=["Attack Surface"]
 app.include_router(scan_jobs.router, prefix="/api", tags=["Scan Jobs & Orchestrator"])
 app.include_router(findings.router, prefix="/api/findings", tags=["Findings"])
 app.include_router(assets.router, prefix="/api", tags=["Assets"])
+app.include_router(reports.router, prefix="/api/reports", tags=["Reports"])
+app.include_router(analytics.router, prefix="/api/analytics", tags=["Analytics"])
 
 # Keep the local-first SQLite database usable for API clients that do not run
 # the ASGI lifespan context (including lightweight CLI and test clients).

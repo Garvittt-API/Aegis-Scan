@@ -31,6 +31,7 @@ class AttackSurfaceItemCreate(AttackSurfaceItemBase):
 
 class AttackSurfaceItemResponse(AttackSurfaceItemBase):
     """Full Attack Surface Item response schema."""
+    metadata: Optional[Dict[str, Any]] = Field(None, validation_alias="item_metadata")
     id: int
     assessment_id: int
     fingerprint: str
