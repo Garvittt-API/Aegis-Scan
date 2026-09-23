@@ -10,7 +10,11 @@ Built for **Smart India Hackathon 2026**
 **SIH26163 — Security Assessment of the World Monitor application**
 
 **Cloud Alchemists**
+<<<<<<< HEAD
 
+=======
+  
+>>>>>>> 64c7669880efde7309617ff5ad69ce3be2a63b62
 ![Python](https://img.shields.io/badge/Python-3.x-blue?style=flat-square&logo=python)
 ![FastAPI](https://img.shields.io/badge/FastAPI-Backend-009688?style=flat-square&logo=fastapi)
 ![React](https://img.shields.io/badge/React-Frontend-61DAFB?style=flat-square&logo=react)
