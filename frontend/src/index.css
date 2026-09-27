@@ -2,74 +2,142 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Base styles */
-body {
-  font-family: 'Inter', system-ui, sans-serif;
-  background-color: #020617;
-  color: #e2e8f0;
+/* Base Cyberpunk & Modern Security Dashboard Theme */
+:root {
+  --neon-green: #00ff66;
+  --neon-cyan: #00f0ff;
+  --neon-magenta: #ff007f;
+  --cyber-dark: #050811;
+  --panel-bg: #090d16;
+  --border-color: #1a2333;
 }
 
-/* Custom scrollbar for dark theme */
+body {
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: #050811;
+  color: #e2e8f0;
+  min-height: 100vh;
+  background-image: 
+    radial-gradient(circle at 50% 0%, rgba(0, 240, 255, 0.03) 0%, transparent 60%),
+    linear-gradient(rgba(26, 35, 51, 0.15) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(26, 35, 51, 0.15) 1px, transparent 1px);
+  background-size: 100% 100%, 32px 32px, 32px 32px;
+}
+
+/* Custom technical scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #1e293b;
+  background: #090d16;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #475569;
-  border-radius: 4px;
+  background: #1e293b;
+  border-radius: 3px;
+  border: 1px solid rgba(0, 240, 255, 0.1);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #64748b;
+  background: #00f0ff;
 }
 
-/* Code/monospace text */
-code, pre {
-  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+/* Code and monospace text */
+code, pre, .font-mono {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
 }
 
-/* Custom utility classes */
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
+/* Accessible focus rings */
+*:focus-visible {
+  outline: 2px solid #00f0ff;
+  outline-offset: 2px;
+}
+
+/* Cyberpunk & Technical Utilities */
+@layer components {
+  .cyber-card {
+    background-color: rgba(9, 13, 22, 0.85);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(26, 35, 51, 0.9);
+    border-radius: 0.75rem;
+    position: relative;
+  }
+
+  .cyber-card:hover {
+    border-color: rgba(0, 240, 255, 0.3);
+  }
+
+  .neon-glow-green {
+    box-shadow: 0 0 15px rgba(0, 255, 102, 0.25);
+  }
+
+  .neon-glow-cyan {
+    box-shadow: 0 0 15px rgba(0, 240, 255, 0.25);
+  }
+
+  .neon-glow-magenta {
+    box-shadow: 0 0 15px rgba(255, 0, 127, 0.25);
   }
 }
 
-/* Severity badge styles */
+/* Severity badge styles with WCAG-conscious contrast */
 .severity-critical {
-  @apply bg-red-500/20 text-red-400 border-red-500/30;
+  background-color: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.35);
 }
 
 .severity-high {
-  @apply bg-orange-500/20 text-orange-400 border-orange-500/30;
+  background-color: rgba(249, 115, 22, 0.15);
+  color: #fb923c;
+  border: 1px solid rgba(249, 115, 22, 0.35);
 }
 
 .severity-medium {
-  @apply bg-yellow-500/20 text-yellow-400 border-yellow-500/30;
+  background-color: rgba(234, 179, 8, 0.15);
+  color: #facc15;
+  border: 1px solid rgba(234, 179, 8, 0.35);
 }
 
 .severity-low {
-  @apply bg-blue-500/20 text-blue-400 border-blue-500/30;
+  background-color: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.35);
 }
 
 .severity-informational {
-  @apply bg-gray-500/20 text-gray-400 border-gray-500/30;
+  background-color: rgba(107, 114, 128, 0.15);
+  color: #9ca3af;
+  border: 1px solid rgba(107, 114, 128, 0.35);
 }
 
 /* Status badge styles */
 .status-verified {
-  @apply bg-green-500/20 text-green-400 border-green-500/30;
+  background-color: rgba(0, 255, 102, 0.12);
+  color: #00ff66;
+  border: 1px solid rgba(0, 255, 102, 0.3);
 }
 
 .status-unverified {
-  @apply bg-yellow-500/20 text-yellow-400 border-yellow-500/30;
+  background-color: rgba(234, 179, 8, 0.12);
+  color: #fde047;
+  border: 1px solid rgba(234, 179, 8, 0.3);
 }
 
 .status-false-positive {
-  @apply bg-gray-500/20 text-gray-400 border-gray-500/30;
+  background-color: rgba(107, 114, 128, 0.12);
+  color: #9ca3af;
+  border: 1px solid rgba(107, 114, 128, 0.3);
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
