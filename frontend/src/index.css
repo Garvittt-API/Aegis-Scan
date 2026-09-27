@@ -2,26 +2,60 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Base Cyberpunk & Modern Security Dashboard Theme */
+/* ==============================================================================
+   Cyberpunk / Glitch Design System CSS Core
+   Theme: "High-Tech, Low-Life" Noir Terminal Dashboard
+   ============================================================================== */
+
 :root {
-  --neon-green: #00ff66;
-  --neon-cyan: #00f0ff;
-  --neon-magenta: #ff007f;
-  --cyber-dark: #050811;
-  --panel-bg: #090d16;
-  --border-color: #1a2333;
+  --background: #0a0a0f;
+  --foreground: #e0e0e0;
+  --card: #12121a;
+  --muted: #1c1c2e;
+  --muted-foreground: #6b7280;
+  --accent: #00ff88;
+  --accent-secondary: #ff00ff;
+  --accent-tertiary: #00d4ff;
+  --border: #2a2a3a;
+  --destructive: #ff3366;
+
+  /* Neon Glow Tokens */
+  --box-shadow-neon: 0 0 5px #00ff88, 0 0 12px rgba(0, 255, 136, 0.35);
+  --box-shadow-neon-sm: 0 0 3px #00ff88, 0 0 6px rgba(0, 255, 136, 0.25);
+  --box-shadow-neon-lg: 0 0 10px #00ff88, 0 0 20px rgba(0, 255, 136, 0.5), 0 0 40px rgba(0, 255, 136, 0.2);
+  --box-shadow-neon-secondary: 0 0 5px #ff00ff, 0 0 15px rgba(255, 0, 255, 0.35);
+  --box-shadow-neon-tertiary: 0 0 5px #00d4ff, 0 0 15px rgba(0, 212, 255, 0.35);
 }
 
+/* Background & Global Typography */
 body {
-  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background-color: #050811;
-  color: #e2e8f0;
+  font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+  background-color: var(--background);
+  color: var(--foreground);
   min-height: 100vh;
-  background-image: 
-    radial-gradient(circle at 50% 0%, rgba(0, 240, 255, 0.03) 0%, transparent 60%),
-    linear-gradient(rgba(26, 35, 51, 0.15) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(26, 35, 51, 0.15) 1px, transparent 1px);
-  background-size: 100% 100%, 32px 32px, 32px 32px;
+  position: relative;
+  background-image:
+    linear-gradient(rgba(0, 255, 136, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 255, 136, 0.02) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* Subtle CRT Scanlines Overlay */
+body::after {
+  content: " ";
+  display: block;
+  position: fixed;
+  top: 0; left: 0; bottom: 0; right: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.18) 2px,
+    rgba(0, 0, 0, 0.18) 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.7;
 }
 
 /* Custom technical scrollbar */
@@ -31,105 +65,229 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #090d16;
+  background: #0a0a0f;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1e293b;
-  border-radius: 3px;
-  border: 1px solid rgba(0, 240, 255, 0.1);
+  background: #2a2a3a;
+  border-radius: 0px;
+  border: 1px solid rgba(0, 255, 136, 0.2);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #00f0ff;
+  background: #00ff88;
+  box-shadow: 0 0 8px #00ff88;
 }
 
-/* Code and monospace text */
-code, pre, .font-mono {
-  font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
-}
-
-/* Accessible focus rings */
+/* Accessible focus ring matching neon accent */
 *:focus-visible {
-  outline: 2px solid #00f0ff;
+  outline: 2px solid #00ff88;
   outline-offset: 2px;
+  box-shadow: 0 0 8px rgba(0, 255, 136, 0.5);
 }
 
-/* Cyberpunk & Technical Utilities */
+/* ==============================================================================
+   Cyberpunk Shapes & Component Utilities
+   ============================================================================== */
+
 @layer components {
+  /* Chamfered corner clip-paths */
+  .cyber-chamfer {
+    clip-path: polygon(
+      0 10px, 10px 0,
+      calc(100% - 10px) 0, 100% 10px,
+      100% calc(100% - 10px), calc(100% - 10px) 100%,
+      10px 100%, 0 calc(100% - 10px)
+    );
+  }
+
+  .cyber-chamfer-sm {
+    clip-path: polygon(
+      0 6px, 6px 0,
+      calc(100% - 6px) 0, 100% 6px,
+      100% calc(100% - 6px), calc(100% - 6px) 100%,
+      6px 100%, 0 calc(100% - 6px)
+    );
+  }
+
+  .cyber-chamfer-tl-br {
+    clip-path: polygon(
+      0 12px, 12px 0,
+      100% 0, 100% calc(100% - 12px),
+      calc(100% - 12px) 100%, 0 100%
+    );
+  }
+
+  /* Cyber Card Variants */
   .cyber-card {
-    background-color: rgba(9, 13, 22, 0.85);
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(26, 35, 51, 0.9);
-    border-radius: 0.75rem;
+    background-color: var(--card);
+    border: 1px solid var(--border);
+    transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
   }
 
   .cyber-card:hover {
-    border-color: rgba(0, 240, 255, 0.3);
+    border-color: rgba(0, 255, 136, 0.5);
+    box-shadow: 0 0 12px rgba(0, 255, 136, 0.15);
   }
 
-  .neon-glow-green {
-    box-shadow: 0 0 15px rgba(0, 255, 102, 0.25);
+  .cyber-card-terminal {
+    background-color: #0d0d14;
+    border: 1px solid #2a2a3a;
+    position: relative;
   }
 
-  .neon-glow-cyan {
-    box-shadow: 0 0 15px rgba(0, 240, 255, 0.25);
+  .cyber-card-holographic {
+    background-color: rgba(28, 28, 46, 0.4);
+    border: 1px solid rgba(0, 212, 255, 0.35);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.15);
   }
 
-  .neon-glow-magenta {
-    box-shadow: 0 0 15px rgba(255, 0, 127, 0.25);
+  /* Cyber Buttons */
+  .cyber-btn-primary {
+    font-family: 'Share Tech Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    border: 1px solid #00ff88;
+    background-color: transparent;
+    color: #00ff88;
+    transition: all 150ms ease;
+    clip-path: polygon(
+      0 6px, 6px 0,
+      calc(100% - 6px) 0, 100% 6px,
+      100% calc(100% - 6px), calc(100% - 6px) 100%,
+      6px 100%, 0 calc(100% - 6px)
+    );
+  }
+
+  .cyber-btn-primary:hover {
+    background-color: #00ff88;
+    color: #0a0a0f;
+    box-shadow: 0 0 15px rgba(0, 255, 136, 0.6);
+    font-weight: 700;
+  }
+
+  .cyber-btn-secondary {
+    font-family: 'Share Tech Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    border: 1px solid #ff00ff;
+    background-color: transparent;
+    color: #ff00ff;
+    transition: all 150ms ease;
+    clip-path: polygon(
+      0 6px, 6px 0,
+      calc(100% - 6px) 0, 100% 6px,
+      100% calc(100% - 6px), calc(100% - 6px) 100%,
+      6px 100%, 0 calc(100% - 6px)
+    );
+  }
+
+  .cyber-btn-secondary:hover {
+    background-color: #ff00ff;
+    color: #0a0a0f;
+    box-shadow: 0 0 15px rgba(255, 0, 255, 0.6);
+    font-weight: 700;
+  }
+
+  .cyber-btn-cyan {
+    font-family: 'Share Tech Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    border: 1px solid #00d4ff;
+    background-color: transparent;
+    color: #00d4ff;
+    transition: all 150ms ease;
+    clip-path: polygon(
+      0 6px, 6px 0,
+      calc(100% - 6px) 0, 100% 6px,
+      100% calc(100% - 6px), calc(100% - 6px) 100%,
+      6px 100%, 0 calc(100% - 6px)
+    );
+  }
+
+  .cyber-btn-cyan:hover {
+    background-color: #00d4ff;
+    color: #0a0a0f;
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.6);
+    font-weight: 700;
+  }
+
+  /* Glitch Headline & Chromatic Aberration */
+  .cyber-glitch {
+    position: relative;
+    text-shadow: -1.5px 0 #ff00ff, 1.5px 0 #00d4ff;
+  }
+
+  .cyber-glitch:hover {
+    animation: rgbShift 0.8s ease-in-out infinite;
   }
 }
 
-/* Severity badge styles with WCAG-conscious contrast */
+/* ==============================================================================
+   Technical Badges & Indicators
+   ============================================================================== */
+
 .severity-critical {
-  background-color: rgba(239, 68, 68, 0.15);
-  color: #f87171;
-  border: 1px solid rgba(239, 68, 68, 0.35);
+  background-color: rgba(255, 51, 102, 0.15);
+  color: #ff3366;
+  border: 1px solid rgba(255, 51, 102, 0.45);
+  font-family: 'Share Tech Mono', monospace;
+  text-transform: uppercase;
 }
 
 .severity-high {
   background-color: rgba(249, 115, 22, 0.15);
   color: #fb923c;
-  border: 1px solid rgba(249, 115, 22, 0.35);
+  border: 1px solid rgba(249, 115, 22, 0.45);
+  font-family: 'Share Tech Mono', monospace;
+  text-transform: uppercase;
 }
 
 .severity-medium {
   background-color: rgba(234, 179, 8, 0.15);
-  color: #facc15;
-  border: 1px solid rgba(234, 179, 8, 0.35);
+  color: #fde047;
+  border: 1px solid rgba(234, 179, 8, 0.45);
+  font-family: 'Share Tech Mono', monospace;
+  text-transform: uppercase;
 }
 
 .severity-low {
-  background-color: rgba(59, 130, 246, 0.15);
-  color: #60a5fa;
-  border: 1px solid rgba(59, 130, 246, 0.35);
+  background-color: rgba(0, 212, 255, 0.15);
+  color: #00d4ff;
+  border: 1px solid rgba(0, 212, 255, 0.45);
+  font-family: 'Share Tech Mono', monospace;
+  text-transform: uppercase;
 }
 
 .severity-informational {
   background-color: rgba(107, 114, 128, 0.15);
   color: #9ca3af;
-  border: 1px solid rgba(107, 114, 128, 0.35);
+  border: 1px solid rgba(107, 114, 128, 0.45);
+  font-family: 'Share Tech Mono', monospace;
+  text-transform: uppercase;
 }
 
-/* Status badge styles */
 .status-verified {
-  background-color: rgba(0, 255, 102, 0.12);
-  color: #00ff66;
-  border: 1px solid rgba(0, 255, 102, 0.3);
+  background-color: rgba(0, 255, 136, 0.12);
+  color: #00ff88;
+  border: 1px solid rgba(0, 255, 136, 0.4);
+  font-family: 'Share Tech Mono', monospace;
 }
 
 .status-unverified {
   background-color: rgba(234, 179, 8, 0.12);
   color: #fde047;
-  border: 1px solid rgba(234, 179, 8, 0.3);
+  border: 1px solid rgba(234, 179, 8, 0.4);
+  font-family: 'Share Tech Mono', monospace;
 }
 
 .status-false-positive {
   background-color: rgba(107, 114, 128, 0.12);
   color: #9ca3af;
-  border: 1px solid rgba(107, 114, 128, 0.3);
+  border: 1px solid rgba(107, 114, 128, 0.4);
+  font-family: 'Share Tech Mono', monospace;
 }
 
 /* Reduced motion preference */
