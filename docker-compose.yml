@@ -1,0 +1,67 @@
+version: "3.8"
+
+services:
+  # ----------------------------------------------------------------------------
+  # AegisScan Application (FastAPI Backend + React Static Assets)
+  # ----------------------------------------------------------------------------
+  aegisscan:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aegisscan_app
+    restart: unless-stopped
+    environment:
+      - APP_ENV=production
+      - ENVIRONMENT=production
+      - DEBUG=false
+      - HOST=0.0.0.0
+      - PORT=8000
+      - SECRET_KEY=${SECRET_KEY:-aegisscan_change_in_production_jwt_key_9281734}
+      - DATABASE_URL=postgresql://aegis:${DB_PASSWORD:-aegis_secure_db_pass_2026}@db:5432/aegisscan
+      - CORS_ORIGINS=["http://localhost:5173", "http://localhost:8000", "https://${DOMAIN:-localhost}"]
+      - ALLOW_PRIVATE_TARGETS=${ALLOW_PRIVATE_TARGETS:-false}
+      - MAX_CONCURRENT_SCANS=5
+      - MAX_SCAN_TIMEOUT_SECONDS=300
+    ports:
+      - "8000:8000"
+    volumes:
+      - aegis_reports:/app/backend/reports
+      - aegis_artifacts:/app/backend/artifacts
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - aegis_network
+
+  # ----------------------------------------------------------------------------
+  # PostgreSQL Database
+  # ----------------------------------------------------------------------------
+  db:
+    image: postgres:16-alpine
+    container_name: aegisscan_postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=aegis
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-aegis_secure_db_pass_2026}
+      - POSTGRES_DB=aegisscan
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aegis -d aegisscan"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - aegis_network
+
+volumes:
+  postgres_data:
+    driver: local
+  aegis_reports:
+    driver: local
+  aegis_artifacts:
+    driver: local
+
+networks:
+  aegis_network:
+    driver: bridge

@@ -8,9 +8,13 @@ const api = axios.create({
   }
 })
 
-// Request interceptor
+// Request interceptor to attach Bearer token
 api.interceptors.request.use(
   (config) => {
+    const token = localStorage.getItem('aegisscan_token') || sessionStorage.getItem('aegisscan_token')
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
     return config
   },
   (error) => {
@@ -26,10 +30,12 @@ api.interceptors.response.use(
   (error) => {
     // Handle common errors
     if (error.response) {
-      // Server responded with error
+      if (error.response.status === 401) {
+        // Token expired or invalid
+        console.warn('Session expired or authentication required.')
+      }
       console.error('API Error:', error.response.status, error.response.data)
     } else if (error.request) {
-      // Request made but no response
       console.error('Network Error:', error.message)
     } else {
       console.error('Error:', error.message)

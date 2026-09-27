@@ -1,5 +1,6 @@
 """
 Target Management API routes.
+Enforces strict target URL validation, SSRF prevention, and authorization status tracking.
 """
 
 from typing import Optional, List
@@ -8,7 +9,10 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from loguru import logger
 
+from app.core.config import settings
 from app.core.database import get_db
+from app.core.security import get_optional_current_user
+from app.models.user import User
 from app.models.target import Target, TargetType, TargetEnvironment, TargetStatus, AuthorizationStatus
 from app.models.assessment import Assessment
 from app.schemas.target import (
@@ -18,6 +22,7 @@ from app.schemas.target import (
     TargetListResponse,
     TargetSummary
 )
+from app.utils.security_validation import validate_url, validate_and_sanitize_path
 
 router = APIRouter()
 
@@ -25,11 +30,12 @@ router = APIRouter()
 @router.post("", response_model=TargetResponse, status_code=status.HTTP_201_CREATED)
 async def create_target(
     target_in: TargetCreate,
+    current_user: Optional[User] = Depends(get_optional_current_user),
     db: Session = Depends(get_db)
 ):
     """
     Register a new target in the system.
-    Requires that the target be explicitly authorized.
+    Enforces URL scheme validation, SSRF checks, and explicit authorization declaration.
     """
     logger.info(f"TARGET_CREATED_REQUEST: name='{target_in.name}' type='{target_in.target_type}' env='{target_in.environment}'")
 
@@ -39,6 +45,24 @@ async def create_target(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="At least one target location must be specified (base_url, source_path, or repository_path)"
         )
+
+    # Validate target URL if provided
+    if target_in.base_url:
+        is_valid, url_error = validate_url(target_in.base_url, allow_private=settings.allow_private_targets)
+        if not is_valid:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Target URL validation failed: {url_error}"
+            )
+
+    # Sanitize source path if provided
+    if target_in.source_path:
+        is_valid, sanitized_path, path_error = validate_and_sanitize_path(target_in.source_path)
+        if not is_valid:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Source path validation failed: {path_error}"
+            )
 
     db_target = Target(**target_in.model_dump())
     db.add(db_target)
@@ -86,7 +110,6 @@ async def list_targets(
 
     items = []
     for t in targets:
-        # Calculate assessment count and last assessment
         assessments_query = db.query(Assessment).filter(Assessment.target_id == t.id)
         count = assessments_query.count()
         last_assessment = assessments_query.order_by(Assessment.created_at.desc()).first()
@@ -129,13 +152,31 @@ async def update_target(
     db: Session = Depends(get_db)
 ):
     """
-    Update target parameters.
+    Update target parameters. Validates any updated URLs or paths.
     """
     target = db.query(Target).filter(Target.id == target_id).first()
     if not target:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Target with ID {target_id} not found")
 
-    for field, value in update_data.model_dump(exclude_unset=True).items():
+    data_dict = update_data.model_dump(exclude_unset=True)
+
+    if "base_url" in data_dict and data_dict["base_url"]:
+        is_valid, url_error = validate_url(data_dict["base_url"], allow_private=settings.allow_private_targets)
+        if not is_valid:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Target URL validation failed: {url_error}"
+            )
+
+    if "source_path" in data_dict and data_dict["source_path"]:
+        is_valid, sanitized_path, path_error = validate_and_sanitize_path(data_dict["source_path"])
+        if not is_valid:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Source path validation failed: {path_error}"
+            )
+
+    for field, value in data_dict.items():
         setattr(target, field, value)
 
     db.commit()

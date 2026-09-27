@@ -2,6 +2,7 @@
 Database models package for AegisScan.
 """
 
+from app.models.user import User
 from app.models.target import Target, TargetType, TargetEnvironment, AuthorizationStatus, TargetStatus
 from app.models.assessment import Assessment, AssessmentStatus, AssessmentEnvironment
 from app.models.attack_surface import AttackSurfaceItem, AttackSurfaceType, AttackSurfaceStatus
@@ -22,6 +23,7 @@ from app.models.verification import Verification, VerificationMethod, Verificati
 from app.models.remediation import Remediation, RemediationHistory, RemediationStatus, RemediationEffort
 
 __all__ = [
+    "User",
     "Target",
     "TargetType",
     "TargetEnvironment",

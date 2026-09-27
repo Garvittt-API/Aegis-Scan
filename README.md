@@ -4,312 +4,230 @@
 
 ### Automated Application Security Assessment & Verification Platform
 
-**Discover • Scan • Verify • Prioritize • Remediate • Report**
+**Discover • Scan • Evidence • Normalize • Correlate • Verify • Risk • Remediate • Report**
 
-Built for **Smart India Hackathon 2026**  
-**SIH26163 — Security Assessment of the World Monitor application**
-
-**Cloud Alchemists**
-<<<<<<< HEAD
-
-=======
-  
->>>>>>> 64c7669880efde7309617ff5ad69ce3be2a63b62
-![Python](https://img.shields.io/badge/Python-3.x-blue?style=flat-square&logo=python)
-![FastAPI](https://img.shields.io/badge/FastAPI-Backend-009688?style=flat-square&logo=fastapi)
-![React](https://img.shields.io/badge/React-Frontend-61DAFB?style=flat-square&logo=react)
-![Security](https://img.shields.io/badge/Application-Security-purple?style=flat-square)
+![Python](https://img.shields.io/badge/Python-3.12-blue?style=flat-square&logo=python)
+![FastAPI](https://img.shields.io/badge/FastAPI-Production%20Hardened-009688?style=flat-square&logo=fastapi)
+![React](https://img.shields.io/badge/React-18%20Vite-61DAFB?style=flat-square&logo=react)
+![Security](https://img.shields.io/badge/Security-SSRF%20Protected-green?style=flat-square)
+![Tests](https://img.shields.io/badge/Pytest-67%20Passed-brightgreen?style=flat-square)
+![License](https://img.shields.io/badge/License-Apache%202.0-orange?style=flat-square)
 
 </div>
 
 ---
 
-## 🚀 What is AegisScan?
+## 🚀 Overview
 
-**AegisScan** is a local-first application security assessment platform that brings multiple security testing tools into one structured workflow.
+**AegisScan** is a multi-engine application security assessment and verification platform that consolidates DAST, SAST, SCA, attack-surface discovery, and custom security heuristics into one unified, evidence-driven workflow.
 
-Instead of manually analyzing separate scanner outputs, AegisScan collects, normalizes, correlates and verifies security results before providing risk and remediation information.
+Instead of drowning in fragmented, unverified scanner outputs, AegisScan captures raw tool evidence, normalizes findings into a unified model, correlates duplicates across engines, performs active proof verification, scores contextual business risk, and delivers developer-ready remediation guidance.
 
 ```text
-Target
-  ↓
-Discovery
-  ↓
-Security Scanning
-  ↓
-Evidence
-  ↓
-Normalize & Correlate
-  ↓
-Verify
-  ↓
-Risk
-  ↓
-Remediation
-  ↓
-Report
-````
+TARGET ➔ DISCOVER ➔ SCAN ➔ EVIDENCE ➔ NORMALIZE ➔ CORRELATE ➔ VERIFY ➔ RISK ➔ REMEDIATE ➔ REPORT
+```
 
 ---
 
-## ✨ Key Features
+## ✨ Core Capabilities
 
-* 🎯 **Target Management** — Manage authorized assessment targets and scope.
-* 🗺️ **Attack Surface Discovery** — Discover URLs, endpoints, APIs, forms and parameters.
-* 🔍 **Multi-Engine Scanning** — Integrate DAST, SAST, SCA and custom security checks.
-* 🧩 **Finding Normalization** — Convert different scanner outputs into one finding model.
-* 🔗 **Correlation & Deduplication** — Reduce duplicate findings across security engines.
-* 🛡️ **Evidence-Based Verification** — Separate scanner alerts from verified findings.
-* 📊 **Risk Intelligence** — Analyze severity, confidence and available evidence.
-* 🔧 **Remediation Guidance** — Provide actionable security fixes.
-* 📑 **Security Reports** — Generate HTML, JSON, SARIF and optional PDF reports.
-* 📈 **Security Analytics** — Track findings, verification, remediation and assessment history.
-* 🔄 **CI/CD Integration** — Run policy-based security checks from the CLI.
+- 🎯 **Target & Scope Management**: Strict authorization boundary tracking and SSRF prevention.
+- 🗺️ **Attack Surface Discovery**: Safe spidering, endpoint cataloging, form parsing, and technology detection.
+- 🔍 **Multi-Engine Orchestration**: Coordinated scanning with OWASP ZAP (DAST), Nuclei (Templates), Semgrep (SAST), Dependency-Check (SCA), and Custom heuristics.
+- 🧩 **Zero-Fabrication Normalization**: Unified data model directly backed by raw stdout/stderr/JSON evidence. No simulated or artificial vulnerabilities.
+- 🛡️ **Evidence-Based Verification**: Distinguishes reproducible exploits (`VERIFIED`) from theoretical alerts (`UNVERIFIED` / `FALSE_POSITIVE`).
+- 📊 **Risk Scoring**: Real-world contextual scoring incorporating exploitability, asset exposure, and environmental impact.
+- 🔧 **Remediation Engine**: Step-by-step code guidance, configuration fixes, and verification procedures.
+- 📑 **Comprehensive Reporting**: Production-ready HTML, SARIF 2.1.0, and JSON executive reports.
+- 🔄 **Deterministic CI/CD Integration**: CLI tool with strict exit codes and GitHub Code Scanning SARIF exports.
+- 🔒 **Production Hardened**: JWT Authentication, IP Rate Limiting, Security Headers (CSP, HSTS, X-Frame-Options), and Non-Root Dockerization.
 
 ---
 
 ## 🔍 Integrated Security Engines
 
-| Tool                      | Purpose                                |
-| ------------------------- | -------------------------------------- |
-| 🕷️ OWASP ZAP             | Dynamic Application Security Testing   |
-| 🎯 Nuclei                 | Template-based vulnerability detection |
-| 🔬 Semgrep                | Static Application Security Testing    |
-| 📦 OWASP Dependency-Check | Software Composition Analysis          |
-| 🧪 Custom Checks          | Application-specific security checks   |
-
-Scanner failures and unavailable tools are explicitly reported instead of being treated as clean results.
+| Engine | Type | Detection Purpose |
+| :--- | :--- | :--- |
+| **OWASP ZAP** | DAST | Dynamic web vulnerability scanning and crawling |
+| **Nuclei** | DAST / Templates | Fast, template-based CVE and misconfiguration detection |
+| **Semgrep** | SAST | Static code analysis and security rule violations |
+| **OWASP Dependency-Check** | SCA | Vulnerable open-source components and CVE mapping |
+| **Custom Heuristics** | Hybrid | Security header auditing, cookie attributes, CORS policies |
 
 ---
 
-## 🧠 Architecture
+## 🧠 System Architecture
 
 ```text
-                    ┌─────────────────┐
-                    │     Target      │
-                    └────────┬────────┘
-                             ↓
-                    ┌─────────────────┐
-                    │   Discovery     │
-                    └────────┬────────┘
-                             ↓
-              ┌────────────────────────────┐
-              │      Security Engines      │
-              │ ZAP • Nuclei • Semgrep     │
-              │ Dependency-Check • Custom  │
-              └─────────────┬──────────────┘
-                            ↓
-                    ┌─────────────────┐
-                    │ Raw Evidence    │
-                    └────────┬────────┘
-                             ↓
-                    ┌─────────────────┐
-                    │ Normalize       │
-                    │ Correlate       │
-                    │ Verify          │
-                    └────────┬────────┘
-                             ↓
-                    ┌─────────────────┐
-                    │ Risk &          │
-                    │ Remediation     │
-                    └────────┬────────┘
-                             ↓
-                    ┌─────────────────┐
-                    │ Reports / CI    │
-                    └─────────────────┘
+                                  INTERNET / CLIENTS
+                                          │
+                                          ▼
+                                   ┌──────────────┐
+                                   │  HTTPS / TLS │
+                                   │ (Nginx / ALB)│
+                                   └──────┬───────┘
+                                          │
+                                          ▼
+                        ┌───────────────────────────────────┐
+                        │   Frontend (React 18 / Vite / CSS)│
+                        └─────────────────┬─────────────────┘
+                                          │
+                                          ▼
+                        ┌───────────────────────────────────┐
+                        │   FastAPI Backend API & Gateway   │
+                        │   - JWT Auth & Rate Limiting      │
+                        │   - Security Headers & Middleware │
+                        │   - Target & SSRF Validation      │
+                        └─────────────────┬─────────────────┘
+                                          │
+                  ┌───────────────────────┼───────────────────────┐
+                  ▼                       ▼                       ▼
+          ┌──────────────┐        ┌──────────────┐        ┌──────────────┐
+          │  PostgreSQL  │        │ Concurrency  │        │ Raw Evidence │
+          │   Database   │        │  Semaphore   │        │ Storage Dir  │
+          └──────────────┘        └──────┬───────┘        └──────────────┘
+                                         │
+                                         ▼
+                             ┌───────────────────────┐
+                             │   Scan Orchestrator   │
+                             └───────────┬───────────┘
+                                         │
+          ┌──────────────────────────────┼──────────────────────────────┐
+          ▼                              ▼                              ▼
+    ┌───────────┐                  ┌───────────┐                  ┌───────────┐
+    │ OWASP ZAP │                  │  Nuclei   │                  │  Semgrep  │
+    │  (DAST)   │                  │ (Templates│                  │  (SAST)   │
+    └─────┬─────┘                  └─────┬─────┘                  └─────┬─────┘
+          │                              │                              │
+          └──────────────────────────────┼──────────────────────────────┘
+                                         ▼
+                             ┌───────────────────────┐
+                             │ Raw Evidence Storage  │
+                             └───────────┬───────────┘
+                                         ▼
+                             ┌───────────────────────┐
+                             │ Normalized Findings   │
+                             └───────────┬───────────┘
+                                         ▼
+                             ┌───────────────────────┐
+                             │ Risk & Remediation    │
+                             └───────────┬───────────┘
+                                         ▼
+                             ┌───────────────────────┐
+                             │ Reports (HTML/SARIF)  │
+                             └───────────────────────┘
 ```
 
 ---
 
-## 🛠️ Tech Stack
+## 🛠️ Technology Stack
 
-**Frontend**
-
-* React
-* Vite
-* Tailwind CSS
-* Recharts
-
-**Backend**
-
-* Python
-* FastAPI
-* Pydantic
-* SQLAlchemy
-
-**Security**
-
-* OWASP ZAP
-* Nuclei
-* Semgrep
-* OWASP Dependency-Check
-* Custom Python checks
-
-**Database**
-
-* SQLite
+- **Frontend**: React 18, Vite, Tailwind CSS, Lucide Icons, Recharts, Axios.
+- **Backend API**: Python 3.12, FastAPI, Pydantic v2, SQLAlchemy 2.0, Uvicorn, Jose JWT.
+- **Database**: PostgreSQL 16 (Production) / SQLite (Local Development).
+- **Security & Networking**: Nginx TLS Reverse Proxy, HTTP Security Headers, IP Token Bucket Rate Limiting.
+- **Testing & CI**: Pytest, Pytest-Asyncio, Playwright, GitHub Actions.
 
 ---
 
 ## ⚡ Quick Start
 
-### Backend
-
+### 1. Docker Compose (Production Setup)
 ```bash
+# Clone the repository
+git clone https://github.com/Garvittt-API/Aegis-Scan.git
+cd Aegis-Scan
+
+# Copy environment template
+cp .env.example .env
+
+# Start multi-container stack
+docker-compose up -d --build
+```
+Access the application at `http://localhost:8000` (API Docs: `http://localhost:8000/api/docs`).
+
+---
+
+### 2. Local Development Setup
+
+#### Backend:
+```bash
+# Set up virtual environment
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\Activate.ps1
+
+# Install dependencies
+pip install -r backend/requirements.txt
+
+# Start backend server
 cd backend
-
-python -m venv venv
+python -m app.main
 ```
 
-Windows:
-
-```powershell
-venv\Scripts\activate
-```
-
-Install dependencies:
-
-```bash
-pip install -r requirements.txt
-```
-
-Run:
-
-```bash
-python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
-```
-
-### Frontend
-
-Open another terminal:
-
+#### Frontend:
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
-
-Dashboard:
-
-```text
-http://127.0.0.1:5173
-```
-
-API documentation:
-
-```text
-http://127.0.0.1:8000/api/docs
-```
+Open `http://localhost:5173` in your browser.
 
 ---
 
-## 🔄 CI/CD
+## 🔄 CI/CD Security Policy Scanning
 
-AegisScan can be executed from CI pipelines using its CLI:
+AegisScan can be integrated directly into your build pipeline:
 
-```powershell
-python -m app ci `
-  --target http://127.0.0.1:8010 `
-  --policy ../security-policy.example.yaml `
-  --format json,sarif `
-  --output ../artifacts
+```bash
+python -m app ci \
+  --target ./src \
+  --policy security-policy.example.yaml \
+  --format json,sarif,html \
+  --output artifacts
 ```
 
-### Exit Codes
-
-| Code | Meaning                      |
-| ---: | ---------------------------- |
-|  `0` | Policy passed                |
-|  `1` | Policy failed                |
-|  `2` | Configuration error          |
-|  `3` | Runtime / assessment failure |
+### Deterministic Exit Codes:
+- `0`: Policy Passed (or warnings only).
+- `1`: Policy Failed (thresholds breached).
+- `2`: Configuration Error (missing target or malformed policy).
+- `3`: Runtime / System Failure.
 
 ---
 
 ## 🧪 Testing
 
+Run backend tests:
 ```bash
-cd backend
-python -m pytest -q
+pytest backend/tests -v
 ```
 
-Frontend:
-
+Build and validate frontend:
 ```bash
-cd frontend
-npm run build
+npm --prefix frontend run build
 ```
 
 ---
 
-## 🔐 Responsible Use
+## 📖 Documentation Index
 
-AegisScan is intended for **authorized security testing only**.
-
-Use it against:
-
-* Applications you own
-* Authorized testing environments
-* Local security labs
-* Explicitly permitted targets
-
-**Scanner failure ≠ clean result.**
-**Zero findings ≠ guaranteed security.**
+| Guide | Description |
+| :--- | :--- |
+| 📐 [Architecture Guide](docs/architecture.md) | High-level system design, concurrency model, and data flow |
+| 🚀 [Deployment Guide](docs/deployment.md) | Docker, PostgreSQL, Nginx reverse proxy, and TLS setup |
+| 💻 [Development Guide](docs/development.md) | Local environment setup, test runner, and code conventions |
+| 🔐 [Security & Threat Model](docs/security.md) | SSRF prevention, input validation, and responsible disclosure |
+| 📡 [REST API Reference](docs/api.md) | Authentication, Target, Assessment, and Report endpoint specs |
+| 🤖 [CI/CD Integration](docs/ci-cd.md) | CLI security gatekeeper, SARIF generation, and exit codes |
+| 🩺 [Troubleshooting Guide](docs/troubleshooting.md) | Resolving common operational and configuration errors |
 
 ---
 
-## 🗺️ Roadmap
+## 🔐 Responsible Use & Security Policy
 
-* [x] Target Management
-* [x] Attack Surface Discovery
-* [x] Scanner Orchestration
-* [x] Finding Normalization
-* [x] Verification & Risk
-* [x] Remediation
-* [x] Reporting
-* [x] Analytics
-* [x] CI/CD Integration
-* [ ] Continuous Assessment
+AegisScan is designed exclusively for **authorized security assessments** against applications and infrastructure you own or have explicit written permission to test. Public scanning of unauthorized 3rd-party domains is strictly prohibited and guarded against by internal validation controls.
 
 ---
 
 ## 🏆 Smart India Hackathon 2026
 
-Developed for:
-
-**SIH26163 — Security Assessment of the World Monitor application**
-
-### Team Cloud Alchemists
-
-> Turning fragmented security testing into one structured security assessment workflow.
-
----
-
-<div align="center">
-
-### 🛡️ AegisScan
-
-**Discover • Verify • Secure**
-
-Made with ❤️ by **Cloud Alchemists**
-
-</div>
-```
-
-### This is the version I'd actually use.
-
-The **detailed API list, phase-by-phase implementation details, raw evidence structure, full finding schema, etc.** should go into separate documentation:
-
-```text
-docs/
-├── architecture.md
-├── api.md
-├── development.md
-├── security.md
-└── ci-cd.md
-```
-
-That gives you a clean GitHub landing page while still keeping the technical depth available for judges/developers who want it.
-
-**README = sell/explain the project.**
-**`docs/` = explain everything about the project.**
+Developed for **SIH26163 — Security Assessment Platform** by **Team Cloud Alchemists**.

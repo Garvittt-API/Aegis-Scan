@@ -32,8 +32,9 @@ Thumbs.db
 logs/
 *.log
 
-# Reports (generated)
+# Reports and CI Artifacts (generated)
 reports/
+artifacts/
 *.pdf
 
 # Node modules

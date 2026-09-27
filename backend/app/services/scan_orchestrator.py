@@ -1,14 +1,17 @@
 """
 Scan Planner and Scan Orchestrator foundation services.
-Coordinates scan job creation, configuration preparation, and lifecycle management.
+Coordinates scan job creation, configuration preparation, concurrency limiting, and lifecycle management.
 """
 
+import asyncio
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 from loguru import logger
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.models.assessment import Assessment, AssessmentStatus
+from app.models.target import Target, AuthorizationStatus
 from app.models.attack_surface import AttackSurfaceItem
 from app.models.scan_job import (
     ScanJob,
@@ -18,6 +21,9 @@ from app.models.scan_job import (
 )
 from app.scanners.adapters import get_scanner_adapter
 from app.services.findings import FindingService
+
+# Concurrency limiter to protect system resources
+_scan_semaphore = asyncio.Semaphore(settings.max_concurrent_scans)
 
 
 class ScanPlanner:
@@ -181,6 +187,7 @@ class ScanPlanner:
 class ScanOrchestrator:
     """
     Manages scan job execution lifecycle, queue tracking, and scanner dispatching.
+    Enforces concurrency bounds, resource isolation, and target authorization.
     """
 
     @staticmethod
@@ -205,112 +212,123 @@ class ScanOrchestrator:
     @staticmethod
     async def execute_scan_job(db: Session, job_id: int) -> Dict[str, Any]:
         """
-        Dispatches a job to its real scanner adapter, captures execution, and persists raw results.
-        Isolates any execution errors to preserve the overall assessment workflow.
+        Dispatches a job to its real scanner adapter with concurrency control,
+        captures execution, and persists raw results.
         """
         job = db.query(ScanJob).filter(ScanJob.id == job_id).first()
         if not job:
             raise ValueError(f"ScanJob with ID {job_id} not found")
 
         assessment = db.query(Assessment).filter(Assessment.id == job.assessment_id).first()
+        if not assessment:
+            raise ValueError(f"Assessment {job.assessment_id} not found")
+
+        # Authorization Verification Guard
+        if not assessment.authorization_confirmed:
+            if assessment.target_id:
+                target = db.query(Target).filter(Target.id == assessment.target_id).first()
+                if not target or target.authorization_status != AuthorizationStatus.AUTHORIZED:
+                    job.transition_to(ScanJobStatus.FAILED)
+                    job.error = "Scan execution rejected: Target is not authorized for scanning."
+                    db.commit()
+                    return {"job_id": job.id, "status": ScanJobStatus.FAILED.value, "error": job.error}
 
         if job.status not in [ScanJobStatus.PENDING, ScanJobStatus.QUEUED]:
             raise ValueError(f"Only pending or queued jobs can execute; current status is {job.status.value}")
 
-        # Transition job to RUNNING
-        job.transition_to(ScanJobStatus.RUNNING)
-        job.started_at = datetime.utcnow()
-        # External scanners do not expose a reliable percentage before completion.
-        job.progress = 0
-        job.logs.append({
-            "time": datetime.utcnow().isoformat(),
-            "level": "INFO",
-            "msg": f"Starting scanner execution: {job.scanner.value.upper()}"
-        })
-        db.commit()
-        db.refresh(job)
-
-        if assessment and assessment.status in [AssessmentStatus.CONFIGURED, AssessmentStatus.QUEUED, AssessmentStatus.PENDING]:
-            assessment.status = AssessmentStatus.SCANNING
-            assessment.current_phase = f"Scanning ({job.scanner.value.upper()})"
-            db.commit()
-
-        logger.info(f"SCAN_JOB_STARTED: job_id={job.id} scanner='{job.scanner.value}' target='{job.target}'")
-
-        try:
-            adapter = get_scanner_adapter(job.scanner)
-            exec_result = await adapter.execute(
-                job_id=job.id,
-                assessment_id=job.assessment_id,
-                target=job.target,
-                config=job.configuration
-            )
-
-            status_str = exec_result.get("status", ScanJobStatus.FAILED.value)
-            if status_str == ScanJobStatus.UNAVAILABLE.value:
-                job.transition_to(ScanJobStatus.UNAVAILABLE)
-                job.error = exec_result.get("message") or "Scanner executable was not found."
-            elif status_str == ScanJobStatus.COMPLETED.value:
-                job.transition_to(ScanJobStatus.COMPLETED)
-                job.error = None
-            elif status_str == ScanJobStatus.TIMEOUT.value:
-                job.transition_to(ScanJobStatus.TIMEOUT)
-                job.error = f"Scanner timed out after execution window."
-            else:
-                job.transition_to(ScanJobStatus.FAILED)
-                job.error = exec_result.get("error") or exec_result.get("stderr") or "Scanner execution failed."
-
-            job.progress = 100
-            job.completed_at = datetime.utcnow()
-            job.result_location = exec_result.get("result_location")
+        async with _scan_semaphore:
+            # Transition job to RUNNING
+            job.transition_to(ScanJobStatus.RUNNING)
+            job.started_at = datetime.utcnow()
+            job.progress = 0
             job.logs.append({
                 "time": datetime.utcnow().isoformat(),
-                "level": "INFO" if job.status == ScanJobStatus.COMPLETED else "WARNING",
-                "msg": f"Scanner finished with status '{job.status.value}' (exit code: {exec_result.get('exit_code', -1)}, duration: {exec_result.get('duration_seconds', 0)}s)"
+                "level": "INFO",
+                "msg": f"Starting scanner execution: {job.scanner.value.upper()}"
             })
             db.commit()
             db.refresh(job)
 
-            # Normalize only the raw artifact produced by this job. Parser failures
-            # are isolated by FindingService and never replace the raw evidence.
-            FindingService.process_scan_result(db, job)
+            if assessment.status in [AssessmentStatus.CONFIGURED, AssessmentStatus.QUEUED, AssessmentStatus.PENDING]:
+                assessment.status = AssessmentStatus.SCANNING
+                assessment.current_phase = f"Scanning ({job.scanner.value.upper()})"
+                db.commit()
 
-            logger.info(f"SCAN_JOB_FINISHED: job_id={job.id} scanner='{job.scanner.value}' status='{job.status.value}'")
+            logger.info(f"SCAN_JOB_STARTED: job_id={job.id} scanner='{job.scanner.value}' target='{job.target}'")
 
-            # Check if all jobs in assessment are completed / terminal
-            ScanOrchestrator._evaluate_assessment_completion(db, job.assessment_id)
+            try:
+                adapter = get_scanner_adapter(job.scanner)
+                exec_result = await adapter.execute(
+                    job_id=job.id,
+                    assessment_id=job.assessment_id,
+                    target=job.target,
+                    config=job.configuration
+                )
 
-            return {
-                "job_id": job.id,
-                "scanner": job.scanner.value,
-                "status": job.status.value,
-                "result_location": job.result_location,
-                "duration_seconds": exec_result.get("duration_seconds", 0),
-                "exit_code": exec_result.get("exit_code"),
-                "message": job.error or "Scan job completed."
-            }
+                status_str = exec_result.get("status", ScanJobStatus.FAILED.value)
+                if status_str == ScanJobStatus.UNAVAILABLE.value:
+                    job.transition_to(ScanJobStatus.UNAVAILABLE)
+                    job.error = exec_result.get("message") or "Scanner executable was not found."
+                elif status_str == ScanJobStatus.COMPLETED.value:
+                    job.transition_to(ScanJobStatus.COMPLETED)
+                    job.error = None
+                elif status_str == ScanJobStatus.TIMEOUT.value:
+                    job.transition_to(ScanJobStatus.TIMEOUT)
+                    job.error = "Scanner timed out after execution window."
+                else:
+                    job.transition_to(ScanJobStatus.FAILED)
+                    job.error = exec_result.get("error") or exec_result.get("stderr") or "Scanner execution failed."
 
-        except Exception as e:
-            logger.error(f"SCAN_JOB_ERROR: job_id={job.id} scanner='{job.scanner.value}' error='{str(e)}'")
-            job.status = ScanJobStatus.FAILED
-            job.completed_at = datetime.utcnow()
-            job.error = str(e)
-            job.logs.append({
-                "time": datetime.utcnow().isoformat(),
-                "level": "ERROR",
-                "msg": f"Unexpected error during scanner execution: {str(e)}"
-            })
-            db.commit()
-            db.refresh(job)
+                job.progress = 100
+                job.completed_at = datetime.utcnow()
+                job.result_location = exec_result.get("result_location")
+                job.logs.append({
+                    "time": datetime.utcnow().isoformat(),
+                    "level": "INFO" if job.status == ScanJobStatus.COMPLETED else "WARNING",
+                    "msg": f"Scanner finished with status '{job.status.value}' (exit code: {exec_result.get('exit_code', -1)}, duration: {exec_result.get('duration_seconds', 0)}s)"
+                })
+                db.commit()
+                db.refresh(job)
 
-            ScanOrchestrator._evaluate_assessment_completion(db, job.assessment_id)
+                # Normalize only the raw artifact produced by this job.
+                FindingService.process_scan_result(db, job)
 
-            return {
-                "job_id": job.id,
-                "scanner": job.scanner.value,
-                "status": ScanJobStatus.FAILED.value,
-                "error": str(e)
-            }
+                logger.info(f"SCAN_JOB_FINISHED: job_id={job.id} scanner='{job.scanner.value}' status='{job.status.value}'")
+
+                # Check if all jobs in assessment are completed / terminal
+                ScanOrchestrator._evaluate_assessment_completion(db, job.assessment_id)
+
+                return {
+                    "job_id": job.id,
+                    "scanner": job.scanner.value,
+                    "status": job.status.value,
+                    "result_location": job.result_location,
+                    "duration_seconds": exec_result.get("duration_seconds", 0),
+                    "exit_code": exec_result.get("exit_code"),
+                    "message": job.error or "Scan job completed."
+                }
+
+            except Exception as e:
+                logger.error(f"SCAN_JOB_ERROR: job_id={job.id} scanner='{job.scanner.value}' error='{str(e)}'")
+                job.status = ScanJobStatus.FAILED
+                job.completed_at = datetime.utcnow()
+                job.error = str(e)
+                job.logs.append({
+                    "time": datetime.utcnow().isoformat(),
+                    "level": "ERROR",
+                    "msg": f"Unexpected error during scanner execution: {str(e)}"
+                })
+                db.commit()
+                db.refresh(job)
+
+                ScanOrchestrator._evaluate_assessment_completion(db, job.assessment_id)
+
+                return {
+                    "job_id": job.id,
+                    "scanner": job.scanner.value,
+                    "status": ScanJobStatus.FAILED.value,
+                    "error": str(e)
+                }
 
     @staticmethod
     async def run_all_jobs(db: Session, assessment_id: int) -> List[Dict[str, Any]]:

@@ -1,15 +1,33 @@
 """
 AegisScan Backend - Main FastAPI Application
+Production-hardened API with Security Headers, Rate Limiting, and Authentication.
 """
 
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 
 from app.core.config import settings
 from app.core.database import init_db
-from app.api.routes import health, targets, assessments, findings, assets, attack_surface, discovery, scan_jobs, reports, analytics
+from app.core.middleware import (
+    SecurityHeadersMiddleware,
+    RateLimiterMiddleware,
+    global_exception_handler
+)
+from app.api.routes import (
+    health,
+    auth,
+    targets,
+    assessments,
+    findings,
+    assets,
+    attack_surface,
+    discovery,
+    scan_jobs,
+    reports,
+    analytics
+)
 
 
 @asynccontextmanager
@@ -18,15 +36,16 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info(f"Starting {settings.app_name} v{settings.app_version}")
     logger.info(f"Environment: {settings.environment}")
+    logger.info(f"Private targets allowed: {settings.allow_private_targets}")
 
     # Initialize database
     init_db()
-    logger.info("Database initialized")
+    logger.info("Database initialized successfully")
 
     yield
 
     # Shutdown
-    logger.info("Shutting down...")
+    logger.info("Shutting down AegisScan...")
 
 
 # Create FastAPI application
@@ -45,37 +64,49 @@ app = FastAPI(
     openapi_url="/api/openapi.json"
 )
 
-# CORS middleware
+# 1. Add Security Headers Middleware
+app.add_middleware(SecurityHeadersMiddleware)
+
+# 2. Add Rate Limiting Middleware
+app.add_middleware(RateLimiterMiddleware)
+
+# 3. Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
-# Include routers
+# 4. Register global exception handler
+app.add_exception_handler(Exception, global_exception_handler)
+
+# 5. Include routers
 app.include_router(health.router, tags=["Health"])
+app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(targets.router, prefix="/api/targets", tags=["Targets"])
 app.include_router(assessments.router, prefix="/api/assessments", tags=["Assessments"])
 app.include_router(discovery.router, prefix="/api", tags=["Discovery"])
 app.include_router(attack_surface.router, prefix="/api", tags=["Attack Surface"])
 app.include_router(scan_jobs.router, prefix="/api", tags=["Scan Jobs & Orchestrator"])
 app.include_router(findings.router, prefix="/api/findings", tags=["Findings"])
-app.include_router(assets.router, prefix="/api", tags=["Assets"])
+app.include_router(assets.router, prefix="/api/assets", tags=["Assets"])
 app.include_router(reports.router, prefix="/api/reports", tags=["Reports"])
 app.include_router(analytics.router, prefix="/api/analytics", tags=["Analytics"])
 
-# Keep the local-first SQLite database usable for API clients that do not run
-# the ASGI lifespan context (including lightweight CLI and test clients).
+# Keep database initialized for lightweight CLI and testing clients
 init_db()
 
 
 @app.get("/")
 async def root():
-    """Root endpoint redirecting to API docs."""
+    """Root endpoint redirecting to API documentation."""
     return {
         "message": "Welcome to AegisScan API",
+        "name": settings.app_name,
+        "version": settings.app_version,
+        "environment": settings.environment,
         "docs": "/api/docs",
         "health": "/health"
     }

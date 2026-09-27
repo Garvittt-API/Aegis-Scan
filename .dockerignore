@@ -1,0 +1,38 @@
+# Git
+.git
+.github
+.gitignore
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+.venv
+venv
+env
+*.db
+*.sqlite
+*.sqlite3
+
+# Node / Frontend
+frontend/node_modules
+frontend/dist
+.npm
+
+# Testing & Cache
+.pytest_cache
+.coverage
+htmlcov
+
+# Logs & Temporary artifacts
+logs
+*.log
+*.tmp
+*.temp
+reports
+artifacts
+
+# IDE
+.vscode
+.idea
+*.swp
